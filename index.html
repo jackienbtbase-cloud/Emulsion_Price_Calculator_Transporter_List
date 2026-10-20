@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Price Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .calculator-card {
+            background: #fff;
+            padding: 0;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 550px;
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            background-color: #ecf0f1;
+            border-bottom: 2px solid #bdc3c7;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            background-color: #fff;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+        }
+        .tab:hover:not(.active) {
+            background-color: #e0e6ed;
+        }
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+            display: none;
+        }
+        .results span {
+            font-size: 18px;
+            color: #555;
+        }
+        .results strong {
+            display: block;
+            font-size: 28px;
+            color: #27ae60;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .results .unit-price {
+            color: #3498db; 
+            font-size: 22px;
+            margin-bottom: 0;
+        }
+        .breakdown-box {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #fff;
+            border: 1px dashed #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #7f8c8d;
+            text-align: left;
+            line-height: 1.5;
+        }
+        .breakdown-box strong {
+            font-size: 14px;
+            color: #e74c3c;
+            display: inline;
+            margin: 0;
+        }
+        .guidance-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        .guidance-box h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2980b9;
+        }
+        .guidance-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .guidance-box li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-card">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('drums')" id="tab-drums">DRUMS</div>
+        <div class="tab" onclick="switchTab('bags')" id="tab-bags">BAGS</div>
+    </div>
+
+    <!-- DRUMS Section -->
+    <div class="tab-content active" id="content-drums">
+        <h2>Drums Delivery Price</h2>
+        
+        <div class="input-group">
+            <label for="drumsCount">Number of Drums</label>
+            <input type="number" id="drumsCount" placeholder="Enter number of drums" min="1">
+        </div>
+
+        <div class="input-group">
+            <label for="drumsDistance">Distance (km)</label>
+            <input type="number" id="drumsDistance" placeholder="Enter distance (km)" min="0" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="drumsState">Delivery to State</label>
+            <select id="drumsState">
+                <option value="">-- Select a State --</option>
+                <option value="Port Klang">Port Klang (Special Zone)</option>
+                <option value="Selangor">Selangor</option>
+                <option value="Perak">Perak</option>
+                <option value="Penang">Penang</option>
+                <option value="Kedah">Kedah</option>
+                <option value="Perlis">Perlis</option>
+                <option value="N9">N9</option>
+                <option value="Melaka">Melaka</option>
+                <option value="Johor">Johor</option>
+                <option value="Kelantan">Kelantan</option>
+                <option value="Terengganu">Terengganu</option>
+                <option value="Pahang">Pahang</option>
+            </select>
+        </div>
+
+        <button onclick="calculateDrums()">Calculate Price</button>
+
+        <div class="results" id="drumsResult">
+            <span>Recommended Total Price:</span>
+            <strong id="drumsPriceOutput">-</strong>
+            
+            <span>Unit Price per Drum:</span>
+            <strong id="drumsUnitPriceOutput" class="unit-price">-</strong>
+            
+            <div id="drumsBreakdown" class="breakdown-box"></div>
+        </div>
+
+        <div class="guidance-box">
+            <h4>Delivery Guidance (Drums)</h4>
+            <ul>
+                <li><strong>17ft (5 tonne):</strong> 30 drums</li>
+                <li><strong>21ft (10 tonne):</strong> 50 drums</li>
+                <li><strong>24ft (16 tonne):</strong> 80 drums</li>
+                <li><strong>40ft (24 tonne):</strong> 98 - 120 drums</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- BAGS Section -->
+    <div class="tab-content" id="content-bags">
+        <h2>Bags Delivery Price</h2>
+        
+        <div class="input-group">
+            <label for="bagsCount">Number of Bags</label>
+            <input type="number" id="bagsCount" placeholder="Enter number of bags" min="1">
+        </div>
+
+        <div class="input-group">
+            <label for="bagsDistance">Distance (km)</label>
+            <input type="number" id="bagsDistance" placeholder="Enter distance (km)" min="0" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="bagsState">Delivery to State</label>
+            <select id="bagsState">
+                <option value="">-- Select a State --</option>
+                <option value="Port Klang">Port Klang (Special Zone)</option>
+                <option value="Selangor">Selangor</option>
+                <option value="Perak">Perak</option>
+                <option value="Penang">Penang</option>
+                <option value="Kedah">Kedah</option>
+                <option value="Perlis">Perlis</option>
+                <option value="N9">N9</option>
+                <option value="Melaka">Melaka</option>
+                <option value="Johor">Johor</option>
+                <option value="Kelantan">Kelantan</option>
+                <option value="Terengganu">Terengganu</option>
+                <option value="Pahang">Pahang</option>
+            </select>
+        </div>
+
+        <button onclick="calculateBags()">Calculate Price</button>
+
+        <div class="results" id="bagsResult">
+            <span>Recommended Total Price:</span>
+            <strong id="bagsPriceOutput">-</strong>
+            
+            <span>Unit Price per Bag:</span>
+            <strong id="bagsUnitPriceOutput" class="unit-price">-</strong>
+            
+            <div id="bagsBreakdown" class="breakdown-box"></div>
+        </div>
+
+        <div class="guidance-box">
+            <h4>Delivery Guidance (Bags)</h4>
+            <ul>
+                <li><strong>17ft (5 tonne):</strong> 5 bags</li>
+                <li><strong>21ft (10 tonne):</strong> 10 bags</li>
+                <li><strong>24ft (16 tonne) 2XL:</strong> 16 - 20 bags</li>
+                <li><strong>40ft (30 tonne):</strong> 30 bags</li>
+                <li><strong>Heavy duty (40 tonne):</strong> 40 bags</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.getElementById('tab-drums').classList.remove('active');
+        document.getElementById('tab-bags').classList.remove('active');
+        document.getElementById('content-drums').classList.remove('active');
+        document.getElementById('content-bags').classList.remove('active');
+
+        document.getElementById('tab-' + tabName).classList.add('active');
+        document.getElementById('content-' + tabName).classList.add('active');
+    }
+
+    // Pricing Tables
+    const drumPricingTable = {
+        "Port Klang": [300, 500, 600, 650],
+        "Selangor":   [400, 600, 700, 750],
+        "Perak":      [500, 750, 850, 1000],
+        "Gerik":      [700, 1100, 1300, 1500], // Perak & >300km
+        "Penang":     [600, 900, 1000, 1200],
+        "Kedah":      [700, 1000, 1100, 1300],
+        "Perlis":     [800, 1100, 1200, 1400],
+        "N9":         [400, 600, 700, 750],
+        "Melaka":     [550, 750, 850, 1000],
+        "Johor":      [700, 1000, 1100, 1300],
+        "Kelantan":   [800, 1100, 1300, 1500],
+        "Terengganu": [800, 1100, 1300, 1500],
+        "Pahang":     [700, 1000, 1100, 1300]
+    };
+
+    const bagPricingTable = {
+        "Port Klang": 25,
+        "Selangor":   28,
+        "Perak":      33,
+        "Gerik":      50, // Perak & >300km
+        "Penang":     40,
+        "Kedah":      48,
+        "Perlis":     55,
+        "N9":         30,
+        "Melaka":     32,
+        "Johor":      50,
+        "Kelantan":   55,
+        "Terengganu": 55,
+        "Pahang":     50
+    };
+
+    // Calculate Drums Price
+    function calculateDrums() {
+        const qty = parseFloat(document.getElementById('drumsCount').value);
+        const distance = parseFloat(document.getElementById('drumsDistance').value);
+        const state = document.getElementById('drumsState').value;
+        const resultSection = document.getElementById('drumsResult');
+        const outputTotal = document.getElementById('drumsPriceOutput');
+        const outputUnit = document.getElementById('drumsUnitPriceOutput');
+        const outputBreakdown = document.getElementById('drumsBreakdown');
+
+        if (isNaN(qty) || qty <= 0) {
+            alert("Please enter a valid number of drums.");
+            return;
+        }
+        if (!state) {
+            alert("Please select a delivery state.");
+            return;
+        }
+
+        let key = state;
+        let zoneLabel = state;
+
+        // Check special distance conditions
+        if (!isNaN(distance) && distance > 0 && distance < 50) {
+            key = "Port Klang";
+            zoneLabel = "Special Zone (< 50km / Port Klang)";
+        } else if (state === "Port Klang") {
+            key = "Port Klang";
+            zoneLabel = "Port Klang Special Zone";
+        } else if (state === "Perak" && !isNaN(distance) && distance > 300) {
+            key = "Gerik";
+            zoneLabel = "Perak Long Distance / Gerik (> 300km)";
+        }
+
+        const rates = drumPricingTable[key];
+        let totalPrice = 0;
+        let baseFormula = "";
+
+        // Minimum trip fee for <= 30 drums
+        if (qty <= 30) {
+            totalPrice = rates[0];
+            baseFormula = `Minimum trip fee (<= 30 drums) = <strong>RM ${totalPrice.toFixed(2)}</strong>`;
+        } 
+        // Piecewise linear interpolation between payload tiers
+        else if (qty <= 50) {
+            totalPrice = rates[0] + (qty - 30) * (rates[1] - rates[0]) / (50 - 30);
+            baseFormula = `Linear interpolation between 30 drums (RM ${rates[0]}) and 50 drums (RM ${rates[1]})`;
+        } else if (qty <= 80) {
+            totalPrice = rates[1] + (qty - 50) * (rates[2] - rates[1]) / (80 - 50);
+            baseFormula = `Linear interpolation between 50 drums (RM ${rates[1]}) and 80 drums (RM ${rates[2]})`;
+        } else if (qty <= 100) {
+            totalPrice = rates[2] + (qty - 80) * (rates[3] - rates[2]) / (100 - 80);
+            baseFormula = `Linear interpolation between 80 drums (RM ${rates[2]}) and 100 drums (RM ${rates[3]})`;
+        } else {
+            // Extrapolate for > 100 drums using per-drum rate from 80-100 tier
+            const extraRate = (rates[3] - rates[2]) / (100 - 80);
+            const extraDrums = qty - 100;
+            totalPrice = rates[3] + extraDrums * extraRate;
+            baseFormula = `Base 100 drums (RM ${rates[3]}) + (${extraDrums} extra drums × RM ${extraRate.toFixed(2)}/drum)`;
+        }
+
+        const unitPrice = totalPrice / qty;
+
+        outputTotal.textContent = "RM " + totalPrice.toFixed(2);
+        outputUnit.textContent = "RM " + unitPrice.toFixed(2);
+        
+        outputBreakdown.innerHTML = `
+            Rule Applied: <strong>${zoneLabel}</strong><br>
+            Formula: <code>${baseFormula} = <strong>RM ${totalPrice.toFixed(2)}</strong></code>
+        `;
+        
+        resultSection.style.display = 'block';
+    }
+
+    // Calculate Bags Price
+    function calculateBags() {
+        const qty = parseFloat(document.getElementById('bagsCount').value);
+        const distance = parseFloat(document.getElementById('bagsDistance').value);
+        const state = document.getElementById('bagsState').value;
+        const resultSection = document.getElementById('bagsResult');
+        const outputTotal = document.getElementById('bagsPriceOutput');
+        const outputUnit = document.getElementById('bagsUnitPriceOutput');
+        const outputBreakdown = document.getElementById('bagsBreakdown');
+
+        if (isNaN(qty) || qty <= 0) {
+            alert("Please enter a valid number of bags.");
+            return;
+        }
+        if (!state) {
+            alert("Please select a delivery state.");
+            return;
+        }
+
+        let key = state;
+        let zoneLabel = state;
+
+        // Check special distance conditions (same as drums)
+        if (!isNaN(distance) && distance > 0 && distance < 50) {
+            key = "Port Klang";
+            zoneLabel = "Special Zone (< 50km / Port Klang)";
+        } else if (state === "Port Klang") {
+            key = "Port Klang";
+            zoneLabel = "Port Klang Special Zone";
+        } else if (state === "Perak" && !isNaN(distance) && distance > 300) {
+            key = "Gerik";
+            zoneLabel = "Perak Long Distance / Gerik (> 300km)";
+        }
+
+        const unitPrice = bagPricingTable[key];
+        const totalPrice = unitPrice * qty;
+        const baseFormula = `RM ${unitPrice.toFixed(2)} / bag × ${qty} bags`;
+
+        outputTotal.textContent = "RM " + totalPrice.toFixed(2);
+        outputUnit.textContent = "RM " + unitPrice.toFixed(2);
+        
+        outputBreakdown.innerHTML = `
+            Rule Applied: <strong>${zoneLabel}</strong><br>
+            Formula: <code>${baseFormula} = <strong>RM ${totalPrice.toFixed(2)}</strong></code>
+        `;
+        
+        resultSection.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
