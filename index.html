@@ -153,6 +153,23 @@
         .guidance-box li {
             margin-bottom: 5px;
         }
+        .transporter-box {
+            display: none;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f6fbf8;
+            border-left: 4px solid #27ae60;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        .transporter-box h4 { margin: 0 0 4px; color: #1e8449; }
+        .transporter-box .sub { font-size: 12px; color: #7f8c8d; margin-bottom: 10px; }
+        .transporter-box table { width: 100%; border-collapse: collapse; }
+        .transporter-box th { text-align: left; font-size: 12px; color: #7f8c8d; padding: 4px 6px; border-bottom: 1px solid #d5e8dc; }
+        .transporter-box td { padding: 7px 6px; border-bottom: 1px solid #e3f0e8; }
+        .transporter-box tr:last-child td { border-bottom: none; }
+        .transporter-box .muted { color: #7f8c8d; font-style: italic; }
     </style>
 </head>
 <body>
@@ -179,7 +196,7 @@
 
         <div class="input-group">
             <label for="drumsState">Delivery to State</label>
-            <select id="drumsState">
+            <select id="drumsState" onchange="loadTransporters('drums')">
                 <option value="">-- Select a State --</option>
                 <option value="Port Klang">Port Klang (Special Zone)</option>
                 <option value="Selangor">Selangor</option>
@@ -208,6 +225,8 @@
             <div id="drumsBreakdown" class="breakdown-box"></div>
         </div>
 
+        <div class="transporter-box" id="drumsTransporters"></div>
+
         <div class="guidance-box">
             <h4>Delivery Guidance (Drums)</h4>
             <ul>
@@ -235,7 +254,7 @@
 
         <div class="input-group">
             <label for="bagsState">Delivery to State</label>
-            <select id="bagsState">
+            <select id="bagsState" onchange="loadTransporters('bags')">
                 <option value="">-- Select a State --</option>
                 <option value="Port Klang">Port Klang (Special Zone)</option>
                 <option value="Selangor">Selangor</option>
@@ -264,6 +283,8 @@
             <div id="bagsBreakdown" class="breakdown-box"></div>
         </div>
 
+        <div class="transporter-box" id="bagsTransporters"></div>
+
         <div class="guidance-box">
             <h4>Delivery Guidance (Bags)</h4>
             <ul>
@@ -278,6 +299,72 @@
 </div>
 
 <script>
+    // ===== Supabase (transporter suggestions) =====
+    const SUPABASE_URL = 'https://cqbuguapyeyshujhkvky.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxYnVndWFweWV5c2h1amhrdmt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2OTI5NTQsImV4cCI6MjEwMDI2ODk1NH0.C2EuPMe1ijXCcgJ300iGs-yjyVOs4lC-TuwGu33WAsc';
+    const transporterReq = {};
+
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Shows the exact time in Malaysia time (UTC+8), e.g. 2026-10-14 16:22
+    function formatLastActive(iso) {
+        if (!iso) return '<span class="muted">-</span>';
+        const d = new Date(iso);
+        if (isNaN(d)) return '<span class="muted">-</span>';
+        const parts = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Kuala_Lumpur', hourCycle: 'h23',
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        }).formatToParts(d);
+        const p = {};
+        parts.forEach(x => { p[x.type] = x.value; });
+        return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+    }
+
+    async function loadTransporters(kind) {
+        const box = document.getElementById(kind + 'Transporters');
+        const state = document.getElementById(kind + 'State').value;
+        if (!state) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+        const seq = (transporterReq[kind] || 0) + 1;
+        transporterReq[kind] = seq;
+        const title = `<h4>Transporters who have delivered to ${esc(state)}</h4>`;
+        box.style.display = 'block';
+        box.innerHTML = title + '<div class="sub">Loading...</div>';
+
+        const headers = { 'apikey': SUPABASE_ANON_KEY };
+        if (SUPABASE_ANON_KEY.startsWith('eyJ')) headers['Authorization'] = 'Bearer ' + SUPABASE_ANON_KEY;
+
+        try {
+            // Reads the transporters table directly (no custom functions in Supabase).
+            // Port Klang and Selangor are one region (stored as Selangor).
+            const region = (state === 'Port Klang') ? 'Selangor' : state;
+            const url = SUPABASE_URL + '/rest/v1/transporters'
+                + '?select=company_name,contact_person,last_active_at'
+                + '&usual_regions=cs.' + encodeURIComponent('{"' + region + '"}')
+                + '&or=' + encodeURIComponent('(banned_until.is.null,banned_until.lt.' + new Date().toISOString() + ')')
+                + '&order=last_active_at.desc.nullslast&limit=50';
+            const res = await fetch(url, { headers });
+            if (!res.ok) throw new Error(await res.text());
+            const rows = await res.json();
+            if (seq !== transporterReq[kind]) return; // user changed state meanwhile
+
+            if (!rows.length) {
+                box.innerHTML = title + '<div class="sub">No transporter has taken a job to this region yet.</div>';
+                return;
+            }
+            box.innerHTML = title +
+                '<div class="sub">Transporters who have taken a job to ' + esc(state) + ' before. Most recently active first.</div>' +
+                '<table><thead><tr><th>Company</th><th>Contact Person</th><th>Last Active</th></tr></thead><tbody>' +
+                rows.map(r => `<tr><td>${esc(r.company_name)}</td><td>${esc(r.contact_person)}</td><td style="white-space:nowrap">${formatLastActive(r.last_active_at)}</td></tr>`).join('') +
+                '</tbody></table>';
+        } catch (err) {
+            if (seq !== transporterReq[kind]) return;
+            console.error('Failed to load transporters:', err);
+            box.innerHTML = title + '<div class="sub" style="color:#c0392b;">Could not load transporters. Please try again later.</div>';
+        }
+    }
     function switchTab(tabName) {
         document.getElementById('tab-drums').classList.remove('active');
         document.getElementById('tab-bags').classList.remove('active');
